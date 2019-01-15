@@ -323,13 +323,16 @@ pub enum Protocol {
     __NonExhaustive,
 }
 
+/// a type-def for the callback of the validator.
+pub type Validator = fn(certificate: &Certificate) -> bool;
+
 /// A builder for `TlsConnector`s.
 pub struct TlsConnectorBuilder {
     identity: Option<Identity>,
     min_protocol: Option<Protocol>,
     max_protocol: Option<Protocol>,
     root_certificates: Vec<Certificate>,
-    accept_invalid_certs: bool,
+    validator: Option<Validator>,
     accept_invalid_hostnames: bool,
     use_sni: bool,
 }
@@ -372,6 +375,14 @@ impl TlsConnectorBuilder {
         self
     }
 
+    /// Registers a callback to ask the caller if it accepts the certificate.
+    /// 
+    /// Defaults to `None`.
+    pub fn validate_cert_with(&mut self, validator: Option<Validator>) -> &mut TlsConnectorBuilder{
+        self.validator = validator;
+        self
+    } 
+
     /// Controls the use of certificate validation.
     ///
     /// Defaults to `false`.
@@ -381,11 +392,14 @@ impl TlsConnectorBuilder {
     /// You should think very carefully before using this method. If invalid certificates are trusted, *any*
     /// certificate for *any* site will be trusted for use. This includes expired certificates. This introduces
     /// significant vulnerabilities, and should only be used as a last resort.
+    #[deprecated(since="0.2.2", note="please use `validate_cert_with` instead")]
     pub fn danger_accept_invalid_certs(
         &mut self,
         accept_invalid_certs: bool,
     ) -> &mut TlsConnectorBuilder {
-        self.accept_invalid_certs = accept_invalid_certs;
+
+        //TODO: register a true callback into validator
+
         self
     }
 
@@ -452,12 +466,12 @@ impl TlsConnector {
     /// Returns a new builder for a `TlsConnector`.
     pub fn builder() -> TlsConnectorBuilder {
         TlsConnectorBuilder {
+            validator: None,
             identity: None,
             min_protocol: Some(Protocol::Tlsv10),
             max_protocol: None,
             root_certificates: vec![],
             use_sni: true,
-            accept_invalid_certs: false,
             accept_invalid_hostnames: false,
         }
     }

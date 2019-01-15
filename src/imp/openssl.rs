@@ -243,7 +243,7 @@ pub struct TlsConnector {
     connector: SslConnector,
     use_sni: bool,
     accept_invalid_hostnames: bool,
-    accept_invalid_certs: bool,
+    validator: option<Validator>
 }
 
 impl TlsConnector {
@@ -273,7 +273,7 @@ impl TlsConnector {
             connector: connector.build(),
             use_sni: builder.use_sni,
             accept_invalid_hostnames: builder.accept_invalid_hostnames,
-            accept_invalid_certs: builder.accept_invalid_certs,
+            validator = builder.validator,
         })
     }
 
@@ -287,7 +287,7 @@ impl TlsConnector {
             .use_server_name_indication(self.use_sni)
             .verify_hostname(!self.accept_invalid_hostnames);
         if self.accept_invalid_certs {
-            ssl.set_verify(SslVerifyMode::NONE);
+            ssl.set_verify(SslVerifyMode::);
         }
 
         let s = ssl.connect(domain, stream)?;
